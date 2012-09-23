@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% load game_extras %}
+
+{% block appstyles %}<link href="{% static "css/game.css" %}" rel="stylesheet">{% endblock %}
+
+{% block content %}
+{% for row in board.height|get_range %}
+<div class="row game" id="row{{ row }}">
+  {% for column in board.width|get_range %}
+  <div class="span1">({{row}},{{column}})</div>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}
