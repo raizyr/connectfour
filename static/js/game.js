@@ -8,4 +8,12 @@ $(document).ready(function(){
       $("#board tr td:nth-child("+($(this).index()+1)+"):not(.played):last").removeClass("hover-target");
     }
   });
+
+  $('td.gamecell').click(function(e){
+    if ($('#board').data('turn') == 0) {
+      console.log('playing column ' + $(this).data('column'));
+      Dajaxice.game.playcolumn(Dajax.process, {'column':$(this).data('column')});
+    }
+  });
 });
+

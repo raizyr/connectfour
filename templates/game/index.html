@@ -5,11 +5,19 @@
 {% block appstyles %}<link href="{% static "css/game.css" %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
+<h1>Connect Four</h1>
+{% csrf_token %}
+<table id="board" class="game" data-turn="{{board.turn}}">
 {% for row in board.height|get_range %}
-<div class="row game" id="row{{ row }}">
+<tr class="row" data-row="{{ row }}">
   {% for column in board.width|get_range %}
-  <div class="span1">({{row}},{{column}})</div>
+  <td class="gamecell" data-column="{{column}}">({{row}},{{column}})</td>
   {% endfor %}
-</div>
+</tr>
 {% endfor %}
+{% endblock %}
+
+{% block appjs %}
+<script src="{% static "js/game.js" %}"></script>
+<script src="{% static "dajax/jquery.dajax.core.js" %}"></script>
 {% endblock %}

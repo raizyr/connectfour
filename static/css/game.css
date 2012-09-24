@@ -1,3 +1,29 @@
 .game {
   text-align: center;
 }
+
+.game td {
+  border: 2px solid #003F87;
+  height: 64px;
+  width: 64px !important;
+  margin-left: 0 !important;
+}
+
+.game td.hover {
+  background-color: #ddd;
+}
+
+.game td.hover-target,
+.game td.played.player0 {
+  background-image: url('/static/img/red.png');
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  color: #ddd;
+}
+
+.game td.played.player1 {
+  background-image: url('/static/img/black.png');
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  color: #ddd;
+}

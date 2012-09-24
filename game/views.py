@@ -1,5 +1,11 @@
 # Create your views here.
-from django.http import HttpResponse
+from django.shortcuts import render
+
+from game.models import Board
 
 def index(request):
-    return HttpResponse("Want to play a game?")
+    # start a new board
+    board = Board()
+    request.session['board'] = board
+
+    return render(request, 'game/index.html', {"board": board})
