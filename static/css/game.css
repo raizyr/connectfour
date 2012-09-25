@@ -14,14 +14,14 @@
 }
 
 .game td.hover-target,
-.game td.played.player0 {
+.game td.played.player {
   background-image: url('/static/img/red.png');
   background-position: 0 0;
   background-repeat: no-repeat;
   color: #ddd;
 }
 
-.game td.played.player1 {
+.game td.played.computer {
   background-image: url('/static/img/black.png');
   background-position: 0 0;
   background-repeat: no-repeat;
