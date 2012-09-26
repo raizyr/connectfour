@@ -1,4 +1,12 @@
 $(document).ready(function(){
+  $('#board').on('turnchanged', function(e) {
+    if ($('#board').data('turn') == 'C') {
+      $('#gamestatus h1').text("Computer is thinking.");
+      Dajaxice.game.computerplay(Dajax.process);
+    } else {
+      $('#gamestatus h1').text("Your turn!");
+    }
+  });
   $("#board").delegate('td','mouseover mouseleave', function(e) {
     if (e.type == 'mouseover' && $('#board').data('turn') == 'P') {
       $("#board tr td:nth-child("+($(this).index()+1)+"):not(.played)").addClass("hover");
@@ -17,11 +25,14 @@ $(document).ready(function(){
   });
 });
 
-var computer_turn = function() {
-  Dajaxice.game.computerplay(Dajax.process);
-}
+var wintext = {"C":"Computer wins!", "P":"You win!"}
 
-
-var change_board_turn = function(player) {
-  $('#board').data('turn', player);
+var update_game_status = function(data) {
+  if (data['winner']) {
+    $('#board').removeData('turn');
+    $('#gamestatus h1').text("Game Over!  " + wintext[data['winner']]);
+    $('#gamestatus').append($('<a href="/game/">Click here to play again.</a>'));
+  } else {
+    $('#board').data('turn', data['turn']).trigger('turnchanged');
+  }
 }

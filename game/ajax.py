@@ -1,9 +1,5 @@
-from django.core.context_processors import csrf
-
 from dajax.core import Dajax
 from dajaxice.decorators import dajaxice_register
-
-from game.models import Board
 
 @dajaxice_register
 def playcolumn(request, column):
@@ -12,11 +8,10 @@ def playcolumn(request, column):
     request.session['board'] = board
 
     dajax = Dajax()
-    dajax.add_data(board.turn, 'change_board_turn')
+    dajax.add_data({'turn':board.turn, 'winner':board.winner}, 'update_game_status')
     cell_selector = '#board tr td:nth-child(%s):not(.played):last' % str(column + 1)
     dajax.add_css_class(cell_selector, ['player', 'played'])
     dajax.remove_css_class('#board td', ['hover', 'hover-target'])
-    dajax.add_data(None, 'computer_turn')
 
     return dajax.json()
 
@@ -27,7 +22,7 @@ def computerplay(request):
     request.session['board'] = board
 
     dajax = Dajax()
-    dajax.add_data(board.turn, 'change_board_turn')
+    dajax.add_data({'turn':board.turn, 'winner':board.winner}, 'update_game_status')
     cell_selector = '#board tr td:nth-child(%s):not(.played):last' % str(column + 1)
     dajax.add_css_class(cell_selector, ['computer', 'played'])
     dajax.remove_css_class('#board td', ['hover', 'hover-target'])

@@ -15,7 +15,7 @@ WINS = {
 }
 
 # Scoring weights
-SCORES = [0,2,4,8]
+SCORES = [0,2,8,64]
 MAX_SCORE = 99999
 
 class Board(object):
@@ -44,8 +44,8 @@ class Board(object):
         score = self._getscore(player)
 
         if depth == 0: return (None,score) # max depth reached, just return the score
-        if score == -SCORES[-1]: return (None,score) # we lose
-        if score == SCORES[-1]: return (None,score) # we win
+        if score == -MAX_SCORE: return (None,score) # we lose
+        if score == MAX_SCORE: return (None,score) # we win
 
         best = (-1,0) # best (column,score) found
         worst = (-1,999999) # worst (column,score) found
@@ -127,7 +127,7 @@ class Board(object):
         """
         Determine computer player's look ahead depth based on board difficulty
         """
-        return 3
+        return 2
 
     @property
     def winner(self):

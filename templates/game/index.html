@@ -5,16 +5,24 @@
 {% block appstyles %}<link href="{% static "css/game.css" %}" rel="stylesheet">{% endblock %}
 
 {% block content %}
-<h1>Connect Four</h1>
-{% csrf_token %}
-<table id="board" class="game" data-turn="{{board.turn}}">
-{% for row in board.height|get_range %}
-<tr class="row" data-row="{{ row }}">
-  {% for column in board.width|get_range %}
-  <td class="gamecell" data-column="{{column}}">({{row}},{{column}})</td>
-  {% endfor %}
-</tr>
-{% endfor %}
+<div class="container">
+
+  <div class="row"><h1>Connect Four</h1></div>
+  {% csrf_token %}
+  <div class="row">
+    <table id="board" class="game" data-turn="{{board.turn}}">
+      {% for row in board.height|get_range %}
+      <tr class="row" data-row="{{ row }}">
+        {% for column in board.width|get_range %}
+        <td class="gamecell" data-column="{{column}}">({{row}},{{column}})</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="row" id="gamestatus"><h1>Your Turn!</h1></div>
+</div>
 {% endblock %}
 
 {% block appjs %}
