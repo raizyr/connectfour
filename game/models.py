@@ -22,11 +22,13 @@ INFINITY = float('inf')
 
 class Board(object):
     """State machine for a game board"""
-    def __init__(self, width=None, height=None, turn=None):
+    def __init__(self, width=None, height=None, turn=None, algorithm='alphabeta', difficulty=None):
         self.width = width or settings.BOARD_WIDTH
         self.height = height or settings.BOARD_HEIGHT
         self.turn = turn or PLAYERS[0]
         self.state = np.array(['_' for x in range(self.height*self.width)]).reshape(self.height,self.width)
+        self.algorithm = algorithm
+        self.difficulty = difficulty or 1
 
         self.scorecache = {}
 
@@ -227,7 +229,8 @@ class Board(object):
         self.scorecache[player+str(self.state)] = score
         return score
 
-
+    def computermove(self, player):
+        return getattr(self, self.algorithm)(player)[0]
 
 
     @property
@@ -235,7 +238,7 @@ class Board(object):
         """
         Determine computer player's look ahead depth based on board difficulty
         """
-        return 1
+        return self.difficulty
 
     @property
     def winner(self):

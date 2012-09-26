@@ -19,5 +19,7 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     # url(r'^admin/', include(admin.site.urls)),
-    url(r'^game/', 'game.views.index'),
+    url(r'^game/$', 'game.views.index'),
+    url(r'^game/(?P<algo>\w+)/$', 'game.views.index'),
+    url(r'^game/(?P<algo>\w+)/(?P<diff>\d{1})/$', 'game.views.index'),
 )
