@@ -33,7 +33,7 @@ $(document).ready(function(){
 });
 
 
-var playertext = {"R":"Red", "B":"Black"}
+var playertext = {"R":"Red", "B":"Black", "D":"Draw! No"}
 
 var update_game_status = function(data) {
   if (data['winner']) {

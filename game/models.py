@@ -25,6 +25,9 @@ INFINITY = float('inf')
 class Board(object):
     """State machine for a game board"""
     def __init__(self, width=None, height=None, turn=None, algorithm='alphabeta', difficulty=None, players=1):
+        """
+        The game board.  Acts as a state machine for the game
+        """
         self.width = width or settings.BOARD_WIDTH
         self.height = height or settings.BOARD_HEIGHT
         self.turn = turn or PLAYERS[0]
@@ -45,6 +48,9 @@ class Board(object):
         self.scorecache = {}
 
     def playcolumn(self, player, column):
+        """
+        Make a move in a column
+        """
         if player != self.turn:
             raise InvalidPlayer # it's not your turn!
         if self.winner:
@@ -52,80 +58,51 @@ class Board(object):
         self._domove(column)
         return column
 
-    def _nextplayer(self):
-        self.turn = PLAYERS[abs(PLAYERS.index(self.turn)-1)]
+    def computermove(self, player, algorithm = None):
+        """
+        Determine the best move by using the defined algorithm
+        """
+        if algorithm is None: algorithm = self.algorithm
+        return getattr(self, algorithm)(player)[0]
 
     def minimax(self, player, depth = None):
-        """Determine the best move for player"""
+        """
+        Determine the best move for player using minimax search algorithm
+        """
         if depth is None: depth = self.lookahead
 
         best = None
         # try each move
         for move in self._movesgenerator():
             self._domove(move)
-            val = self.minimax_value(player, depth)
+            val = self._minimax_value(player, depth)
             self._undomove(move)
             if best is None or val > best[1]:
                 best = (move, val)
-
-        return best
-
-    def minimax_value(self, player, depth):
-        score = self._getscore(player)
-
-        # return the score if we've hit max depth or either won or lost the game
-        if depth <= 0 or abs(score) >= MAX_SCORE: return score
-
-        best = None
-        # try each move
-        for move in self._movesgenerator():
-            self._domove(move)
-            val = self.minimax_value(player, depth-1)
-            self._undomove(move)
-            if self.turn == player:
-                best = max(val,best) # our turn so use the best move
-            else:
-                best = min(val,best) # opponent's turn so use the worst move
 
         return best
 
     def negamax(self, player, depth = None):
-        """Determine the best move for player"""
+        """
+        Determine the best move for player using negamax search algorithm
+        """
         if depth is None: depth = self.lookahead
 
         best = None
         # try each move
         for move in self._movesgenerator():
             self._domove(move)
-            val = -1 * self.negamax_value(player, depth)
+            val = -1 * self._negamax_value(player, depth)
             self._undomove(move)
             if best is None or val > best[1]:
                 best = (move, val)
 
         return best
 
-    def negamax_value(self, player, depth):
-        score = self._getscore(player)
-
-        # return the score if we've hit max depth or either won or lost the game
-        if depth <= 0 or abs(score) >= MAX_SCORE: 
-            if player == self.turn:
-                return score
-            else:
-                return -score
-
-        best = None
-        # try each move
-        for move in self._movesgenerator():
-            self._domove(move)
-            val = -1 * self.negamax_value(player, depth-1)
-            self._undomove(move)
-            if best is None or val > best:
-                best = val
-
-        return best
-
     def alphabeta(self, player, depth=None):
+        """
+        Determine the best move for player using alphabeta pruning algorithm
+        """
         best_val, best_move = None, None
         if depth is None: depth = self.lookahead
 
@@ -136,7 +113,7 @@ class Board(object):
                 opp_beta = -1 * best_val
             else:
                 opp_beta = None
-            val = -1 * self.alphabeta_value(player, depth, None, opp_beta)
+            val = -1 * self._alphabeta_value(player, depth, None, opp_beta)
             self._undomove(move)
             # update the best move so far
             if best_val is None or val > best_val:
@@ -144,11 +121,64 @@ class Board(object):
 
         return (best_move, best_val)
 
-    def alphabeta_value(self, player, depth, alpha, beta):
+    ### "Private" methods, these should not be called from outside the instance ###
+    def _nextplayer(self):
+        """
+        Change the turn to the next player
+        """
+        self.turn = PLAYERS[abs(PLAYERS.index(self.turn)-1)]
+
+    def _minimax_value(self, player, depth):
+        """
+        Look ahead using minimax algorithm to determine the best move
+        """
         score = self._getscore(player)
 
         # return the score if we've hit max depth or either won or lost the game
-        if depth <= 0 or abs(score) >= MAX_SCORE:
+        if depth <= 0 or abs(score) >= MAX_SCORE or self.boardfull: return score
+
+        best = None
+        # try each move
+        for move in self._movesgenerator():
+            self._domove(move)
+            val = self._minimax_value(player, depth-1)
+            self._undomove(move)
+            if self.turn == player:
+                best = max(val,best) # our turn so use the best move
+            else:
+                best = min(val,best) # opponent's turn so use the worst move
+
+        return best
+
+    def _negamax_value(self, player, depth):
+        """
+        Look ahead using negamax algorithm to determine the best move
+        """
+        score = self._getscore(player)
+
+        # return the score if we've hit max depth or either won or lost the game
+        if depth <= 0 or abs(score) >= MAX_SCORE or self.boardfull:
+            if player == self.turn:
+                return score
+            else:
+                return -score
+
+        best = None
+        # try each move
+        for move in self._movesgenerator():
+            self._domove(move)
+            val = -1 * self._negamax_value(player, depth-1)
+            self._undomove(move)
+            if best is None or val > best:
+                best = val
+
+        return best
+
+    def _alphabeta_value(self, player, depth, alpha, beta):
+        score = self._getscore(player)
+
+        # return the score if we've hit max depth or either won or lost the game
+        if depth <= 0 or abs(score) >= MAX_SCORE or self.boardfull:
             if player == self.turn:
                 return score
             else:
@@ -165,7 +195,7 @@ class Board(object):
                 opp_beta = -1 * alpha
             else:
                 opp_beta = None
-            val = -1 * self.alphabeta_value(player, depth-1, opp_alpha, opp_beta)
+            val = -1 * self._alphabeta_value(player, depth-1, opp_alpha, opp_beta)
             self._undomove(move)
             # update alpha (current player's low bound)
             if alpha is None or val > alpha:
@@ -241,9 +271,9 @@ class Board(object):
         self.scorecache[player+str(self.state)] = score
         return score
 
-    def computermove(self, player):
-        return getattr(self, self.algorithm)(player)[0]
-
+    @property
+    def boardfull(self):
+        return (self.state[:] != '_').all()
 
     @property
     def currentplayer(self):
@@ -262,6 +292,8 @@ class Board(object):
         """
         Return a winner if one exists by checking the current board score
         """
+        if self.boardfull():
+            return 'D'
         score = self._getscore(self.turn)
         if score >= MAX_SCORE:
             return self.turn
