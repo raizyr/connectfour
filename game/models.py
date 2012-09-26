@@ -1,8 +1,9 @@
 # Create your models here.
 from django.conf import settings
+from django.core.cache import get_cache
 
 import numpy as np
-import random
+import random, md5
 
 from game import exceptions as e
 
@@ -23,6 +24,9 @@ SCORES = [
 ]
 MAX_SCORE = 5000
 INFINITY = float('inf')
+
+# store scorecache directly rather than as part of the object
+scorecache = get_cache('default')
 
 class Board(object):
     """State machine for a game board"""
@@ -45,9 +49,6 @@ class Board(object):
 
         # randomize starting player
         random.shuffle(self.players)
-
-
-        self.scorecache = {}
 
     def playcolumn(self, player, column):
         """
@@ -147,6 +148,8 @@ class Board(object):
             self._undomove(move)
             if self.turn == player:
                 best = max(val,best) # our turn so use the best move
+            elif best is None: # handles the fact that min returns None no matter the val
+                best = val
             else:
                 best = min(val,best) # opponent's turn so use the worst move
 
@@ -260,8 +263,11 @@ class Board(object):
         """
         Walk through all possible win conditions and calculate a total score for a particular player
         """
-        if player+str(self.state) in self.scorecache:
-            return self.scorecache[player+str(self.state)]
+        cachekey = md5.new(player+str(self.state)).hexdigest()
+        cached = scorecache.get(cachekey)
+        if cached:
+            return cached
+
         score = 0
         (r,c) = self.state.shape
         for i in range(r):
@@ -281,14 +287,16 @@ class Board(object):
                             return -SCORES[opponentMarked-1+4]
                         elif playerMarked > 0 and opponentMarked == 0:
                             # add score for player if we have cells marked and opponent does not
-                            score = score + SCORES[playerMarked-1]
+                            score += SCORES[playerMarked-1]
                         elif playerMarked == 0 and opponentMarked > 0:
                             # sub score for opponent if they have cells marked and we do not
-                            score = score - SCORES[opponentMarked-1+4]
+                            score -= SCORES[opponentMarked-1+4]
                         # don't modify score if either both have cells marked or neither do
                     except IndexError:
                         pass
-        self.scorecache[player+str(self.state)] = score
+        # add some randomness so that the computer isn't playing exactly the same every time
+        score *= random.random()
+        scorecache.set(cachekey, score)
         return score
 
     @property
