@@ -32,6 +32,7 @@ class Board(object):
             raise GameOver
         self._swapplayer()
         self._playcolumn(player, column)
+        return column
 
     def _playcolumn(self, p, c, state = None):
         """Update the board state for a column"""
@@ -117,7 +118,7 @@ class Board(object):
         """
         Determine computer player's look ahead depth based on board difficulty
         """
-        return 2
+        return 4
 
     @property
     def winner(self):

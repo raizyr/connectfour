@@ -17,6 +17,10 @@ $(document).ready(function(){
   });
 });
 
+var computer_turn = function() {
+  Dajaxice.game.computerplay(Dajax.process);
+}
+
 
 var change_board_turn = function(player) {
   $('#board').data('turn', player);
