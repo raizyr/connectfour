@@ -15,7 +15,8 @@ WINS = {
 }
 
 # Scoring weights
-SCORES = [0,1,10,100,1000]
+SCORES = [0,2,4,8]
+MAX_SCORE = 99999
 
 class Board(object):
     """State machine for a game board"""
@@ -30,33 +31,17 @@ class Board(object):
             raise InvalidPlayer # it's not your turn!
         if self.winner:
             raise GameOver
-        self._swapplayer()
-        self._playcolumn(player, column)
+        self._domove(column)
         return column
 
-    def _playcolumn(self, p, c, state = None):
-        """Update the board state for a column"""
-        if state == None: state = self.state
-        try:
-            # Slice the board state to the specified column
-            # state[:,c]
-            # Filter it to only cells containing '_'
-            # (state[:,c] == '_').nonzero()[0]
-            # and then get highest indexed item for the row
-            r = (state[:,c] == '_').nonzero()[0].max()
-            state[r,c] = p
-        except ValueError:
-            raise InvalidColumn
-
-    def _swapplayer(self):
+    def _nextplayer(self):
         self.turn = PLAYERS[abs(PLAYERS.index(self.turn)-1)]
 
-    def minimax(self, player, state = None, depth = None):
+    def minimax(self, player, depth = None):
         """Determine the best move for player"""
         if depth == None: depth = self.lookahead
-        if state == None: state = self.state
 
-        score = self._getscore(player, state)
+        score = self._getscore(player)
 
         if depth == 0: return (None,score) # max depth reached, just return the score
         if score == -SCORES[-1]: return (None,score) # we lose
@@ -65,46 +50,70 @@ class Board(object):
         best = (-1,0) # best (column,score) found
         worst = (-1,999999) # worst (column,score) found
         for col in range(self.width):
-            newState = state.copy() # copy current state
             try:
-                self._playcolumn(player, col, newState)
-                nextmove = self.minimax(player, newState, depth-1) # look ahead depth - 1 moves
+                self._domove(col)
+                nextmove = self.minimax(player, depth-1) # look ahead depth - 1 moves
+                self._undomove(col)
                 if best[0] == -1 or nextmove[1] > best[1]: best = (col,nextmove[1]) # compare to previous best
                 if worst[0] == -1 or nextmove[1] < worst[1]: worst = (col,nextmove[1]) # compare to previous worst
             except InvalidColumn:
                 pass
-
+#        import pdb; pdb.set_trace()
         if self.turn == player:
             return (best[0],best[1]+score) # make best possible move
         else:
             return (worst[0],worst[1]+score) # make worst possible move
 
+    def _domove(self, c):
+        try:
+            # Slice the board state to the specified column
+            # state[:,c]
+            # Filter it to only cells containing '_'
+            # (state[:,c] == '_').nonzero()[0]
+            # and then get highest indexed item for the row
+            r = (self.state[:,c] == '_').nonzero()[0].max()
+            self.state[r,c] = self.turn
+            self._nextplayer()
+        except ValueError:
+            raise InvalidColumn
 
-    def _getscore(self, player, state=None):
+    def _undomove(self, c):
+        try:
+            # Slice the board state to the specified column
+            # state[:,c]
+            # Filter it to cells containing any player marker
+            # (state[:,c] != '_').nonzero()[0]
+            # and then get lowest indexed item for the row
+            r = (self.state[:,c] != '_').nonzero()[0].min()
+            self.state[r,c] = '_'
+            self._nextplayer()
+        except ValueError:
+            raise InvalidColumn
+
+    def _getscore(self, player):
         score = 0
-        if state == None: state = self.state
-        (r,c) = state.shape
+        (r,c) = self.state.shape
         for i in range(r):
             for j in range(c):
                 for direction in WINS.keys():
                     try:
-                        slice = state[WINS[direction]['x']+i,WINS[direction]['y']+j]
+                        slice = self.state[WINS[direction]['x']+i,WINS[direction]['y']+j]
                         # number of cells we have marked
                         playerMarked = np.sum(slice == player)
                         # number of cells opponent has marked
                         opponentMarked = np.sum(slice == PLAYERS[abs(PLAYERS.index(player)-1)])
                         if playerMarked == 4:
                             # we win
-                            return SCORES[-1]
+                            return MAX_SCORE
                         elif opponentMarked == 4:
                             # we lose
-                            return -SCORES[-1]
+                            return -MAX_SCORE
                         elif playerMarked > 0 and opponentMarked == 0:
                             # add score for player if we have cells marked and opponent does not
-                            score = score + SCORES[playerMarked]
+                            score = score + SCORES[playerMarked]**2
                         elif playerMarked == 0 and opponentMarked > 0:
                             # sub score for opponent if they have cells marked and we do not
-                            score = score - SCORES[opponentMarked]
+                            score = score - SCORES[opponentMarked]**2
                         # don't modify score if either both have cells marked or neither do
                     except IndexError:
                         pass
@@ -118,7 +127,7 @@ class Board(object):
         """
         Determine computer player's look ahead depth based on board difficulty
         """
-        return 4
+        return 3
 
     @property
     def winner(self):
