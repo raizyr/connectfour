@@ -2,6 +2,7 @@
 from django.conf import settings
 
 import numpy as np
+import operator as op
 
 from game.exceptions import *
 
@@ -16,7 +17,7 @@ WINS = {
 
 # Scoring weights
 SCORES = [0,2,8,64]
-MAX_SCORE = 99999
+MAX_SCORE = float('inf')
 
 class Board(object):
     """State machine for a game board"""
@@ -25,6 +26,8 @@ class Board(object):
         self.height = height or settings.BOARD_HEIGHT
         self.turn = turn or PLAYERS[0]
         self.state = np.array(['_' for x in range(self.height*self.width)]).reshape(self.height,self.width)
+
+        self.scorecache = {}
 
     def playcolumn(self, player, column):
         if player != self.turn:
@@ -47,8 +50,8 @@ class Board(object):
         if score == -MAX_SCORE: return (None,score) # we lose
         if score == MAX_SCORE: return (None,score) # we win
 
-        best = (-1,0) # best (column,score) found
-        worst = (-1,999999) # worst (column,score) found
+        best = (-1,float('-inf')) # best (column,score) found
+        worst = (-1,float('inf')) # worst (column,score) found
         for col in range(self.width):
             try:
                 self._domove(col)
@@ -58,11 +61,33 @@ class Board(object):
                 if worst[0] == -1 or nextmove[1] < worst[1]: worst = (col,nextmove[1]) # compare to previous worst
             except InvalidColumn:
                 pass
-#        import pdb; pdb.set_trace()
         if self.turn == player:
             return (best[0],best[1]+score) # make best possible move
         else:
             return (worst[0],worst[1]+score) # make worst possible move
+
+    def negamax(self, player, depth = None):
+        if depth == None: depth = self.lookahead
+
+        score = self._getscore(player)
+
+        if depth == 0: return (None,score) # max depth reached, just return the score
+        if score == -MAX_SCORE: return (None,score) # we lose
+        if score == MAX_SCORE: return (None,score) # we win
+
+        best = (-1,float('-inf')) # best (column,score) found
+        for col in range(self.width):
+            try:
+                self._domove(col)
+                nextmove = (col, self.minimax(player, depth-1)[1]) # look ahead depth - 1 moves
+                self._undomove(col)
+                best = max(best, nextmove, key=op.itemgetter(1)) # compare to previous best
+            except InvalidColumn:
+                pass
+        return best
+
+    def alphabeta(self, player, depth = None, alpha = MAX_SCORE, beta = MAX_SCORE):
+        pass
 
     def _domove(self, c):
         try:
@@ -91,6 +116,8 @@ class Board(object):
             raise InvalidColumn
 
     def _getscore(self, player):
+        if player+str(self.state) in self.scorecache:
+            return self.scorecache[player+str(self.state)]
         score = 0
         (r,c) = self.state.shape
         for i in range(r):
@@ -117,6 +144,7 @@ class Board(object):
                         # don't modify score if either both have cells marked or neither do
                     except IndexError:
                         pass
+        self.scorecache[player+str(self.state)] = score
         return score
 
 
@@ -127,10 +155,11 @@ class Board(object):
         """
         Determine computer player's look ahead depth based on board difficulty
         """
-        return 2
+        return 4
 
     @property
     def winner(self):
+        """
         (r,c) = self.state.shape
         for i in range(r):
             for j in range(c):
@@ -142,6 +171,13 @@ class Board(object):
                                 return player
                     except IndexError:
                         pass
+        return None
+        """
+        score = self._getscore(self.turn)
+        if score == MAX_SCORE:
+            return self.turn
+        elif score == -MAX_SCORE:
+            return PLAYERS[abs(PLAYERS.index(self.turn)-1)]
         return None
 
 

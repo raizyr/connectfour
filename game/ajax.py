@@ -18,7 +18,8 @@ def playcolumn(request, column):
 @dajaxice_register
 def computerplay(request):
     board = request.session.get('board')
-    column = board.playcolumn('C', board.minimax('C')[0])
+    #column = board.playcolumn('C', board.minimax('C')[0])
+    column = board.playcolumn('C', board.negamax('C')[0])
     request.session['board'] = board
 
     dajax = Dajax()
