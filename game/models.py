@@ -16,8 +16,9 @@ WINS = {
 }
 
 # Scoring weights
-SCORES = [0,2,8,64]
-MAX_SCORE = float('inf')
+SCORES = [1,5,100,10000,2,6,200,15000]
+MAX_SCORE = 5000
+INFINITY = float('inf')
 
 class Board(object):
     """State machine for a game board"""
@@ -47,11 +48,11 @@ class Board(object):
         score = self._getscore(player)
 
         if depth == 0: return (None,score) # max depth reached, just return the score
-        if score == -MAX_SCORE: return (None,score) # we lose
-        if score == MAX_SCORE: return (None,score) # we win
+        if score <= -MAX_SCORE: return (None,score) # we lose
+        if score >= MAX_SCORE: return (None,score) # we win
 
-        best = (-1,float('-inf')) # best (column,score) found
-        worst = (-1,float('inf')) # worst (column,score) found
+        best = (-1,-INFINITY) # best (column,score) found
+        worst = (-1,INFINITY) # worst (column,score) found
         for col in range(self.width):
             try:
                 self._domove(col)
@@ -72,22 +73,43 @@ class Board(object):
         score = self._getscore(player)
 
         if depth == 0: return (None,score) # max depth reached, just return the score
-        if score == -MAX_SCORE: return (None,score) # we lose
-        if score == MAX_SCORE: return (None,score) # we win
+        if score <= -MAX_SCORE: return (None,score) # we lose
+        if score >= MAX_SCORE: return (None,score) # we win
 
-        best = (-1,float('-inf')) # best (column,score) found
+        best = (-1,-INFINITY) # best (column,score) found
         for col in range(self.width):
             try:
                 self._domove(col)
-                nextmove = (col, self.minimax(player, depth-1)[1]) # look ahead depth - 1 moves
+                nextmove = (col, -1 * self.negamax(player, depth-1)[1]) # look ahead depth - 1 moves
                 self._undomove(col)
                 best = max(best, nextmove, key=op.itemgetter(1)) # compare to previous best
             except InvalidColumn:
                 pass
         return best
 
-    def alphabeta(self, player, depth = None, alpha = MAX_SCORE, beta = MAX_SCORE):
-        pass
+    def alphabeta(self, player, depth = None, alpha = -INFINITY, beta = INFINITY):
+        if depth == None: depth = self.lookahead
+
+        score = self._getscore(player)
+
+        if depth <= 0: return (None,score) # max depth reached, just return the score
+        if score <= -MAX_SCORE: return (None,score) # we lose
+        if score >= MAX_SCORE: return (None,score) # we win
+
+        best = (-1,-INFINITY) # best (column,score) found
+        for col in range(self.width):
+            try:
+                self._domove(col)
+                nextmove = (col, -1 * self.alphabeta(player, depth-1,-beta,-alpha)[1]) # look ahead depth - 1 moves
+                self._undomove(col)
+                best = max(best, nextmove, key=op.itemgetter(1)) # compare to previous best
+                if (best[1] >= beta):
+                    break;
+                if (best[1] > alpha):
+                    alpha = best[1]
+            except InvalidColumn:
+                pass
+        return best
 
     def _domove(self, c):
         try:
@@ -131,16 +153,16 @@ class Board(object):
                         opponentMarked = np.sum(slice == PLAYERS[abs(PLAYERS.index(player)-1)])
                         if playerMarked == 4:
                             # we win
-                            return MAX_SCORE
+                            return SCORES[playerMarked-1]
                         elif opponentMarked == 4:
                             # we lose
-                            return -MAX_SCORE
+                            return -SCORES[opponentMarked-1+4]
                         elif playerMarked > 0 and opponentMarked == 0:
                             # add score for player if we have cells marked and opponent does not
-                            score = score + SCORES[playerMarked]**2
+                            score = score + SCORES[playerMarked-1]
                         elif playerMarked == 0 and opponentMarked > 0:
                             # sub score for opponent if they have cells marked and we do not
-                            score = score - SCORES[opponentMarked]**2
+                            score = score - SCORES[opponentMarked-1+4]
                         # don't modify score if either both have cells marked or neither do
                     except IndexError:
                         pass
@@ -155,28 +177,17 @@ class Board(object):
         """
         Determine computer player's look ahead depth based on board difficulty
         """
-        return 4
+        return 3
 
     @property
     def winner(self):
         """
-        (r,c) = self.state.shape
-        for i in range(r):
-            for j in range(c):
-                for direction in WINS.keys():
-                    try:
-                        slice = self.state[WINS[direction]['x']+i,WINS[direction]['y']+j]
-                        for player in PLAYERS:
-                            if np.all(slice == player):
-                                return player
-                    except IndexError:
-                        pass
-        return None
+        Return a winner if one exists by checking the current board score
         """
         score = self._getscore(self.turn)
-        if score == MAX_SCORE:
+        if score >= MAX_SCORE:
             return self.turn
-        elif score == -MAX_SCORE:
+        elif score <= -MAX_SCORE:
             return PLAYERS[abs(PLAYERS.index(self.turn)-1)]
         return None
 
