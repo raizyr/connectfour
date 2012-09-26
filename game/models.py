@@ -2,10 +2,9 @@
 from django.conf import settings
 
 import numpy as np
-import operator as op
 import random
 
-from game.exceptions import *
+from game import exceptions as e
 
 PLAYERS = ('R','B') # R for red player, B for black player
 PLAYER_COMBINATIONS = [('C','C'), ('P','C'), ('P','P')]
@@ -18,19 +17,22 @@ WINS = {
 }
 
 # Scoring weights
-SCORES = [1,5,100,10000,2,6,200,15000]
+SCORES = [
+    1, 5, 100, 10000, # moves good for current player
+    2, 6, 200, 15000  # moves good for opponent higher to ensure blocking
+]
 MAX_SCORE = 5000
 INFINITY = float('inf')
 
 class Board(object):
     """State machine for a game board"""
-    def __init__(self, width=None, height=None, turn=None, algorithm='alphabeta', difficulty=None, players=1):
+    def __init__(self, width=None, height=None, algorithm='alphabeta', difficulty=None, players=1):
         """
         The game board.  Acts as a state machine for the game
         """
         self.width = width or settings.BOARD_WIDTH
         self.height = height or settings.BOARD_HEIGHT
-        self.turn = turn or PLAYERS[0]
+        self.turn = PLAYERS[0]
         self.state = np.array(['_' for x in range(self.height*self.width)]).reshape(self.height,self.width)
         self.algorithm = algorithm
         self.difficulty = difficulty or 1
@@ -52,9 +54,9 @@ class Board(object):
         Make a move in a column
         """
         if player != self.turn:
-            raise InvalidPlayer # it's not your turn!
+            raise e.InvalidPlayer # it's not your turn!
         if self.winner:
-            raise GameOver
+            raise e.GameOver
         self._domove(column)
         return column
 
@@ -175,6 +177,9 @@ class Board(object):
         return best
 
     def _alphabeta_value(self, player, depth, alpha, beta):
+        """
+        Look ahead using alphabeta pruning algorithm to determine best move
+        """
         score = self._getscore(player)
 
         # return the score if we've hit max depth or either won or lost the game
@@ -207,13 +212,22 @@ class Board(object):
         return alpha
 
     def _movesgenerator(self):
+        """
+        Generator to yield valid moves
+        """
         for col in range(self.width):
             if self._checkmove(col): yield col
 
     def _checkmove(self, c):
+        """
+        Check a column for valid moves
+        """
         return (self.state[:,c] == '_').any()
 
     def _domove(self, c):
+        """
+        Attempt to make a move at column c
+        """
         try:
             # Slice the board state to the specified column
             # state[:,c]
@@ -224,9 +238,12 @@ class Board(object):
             self.state[r,c] = self.turn
             self._nextplayer()
         except ValueError:
-            raise InvalidColumn
+            raise e.InvalidColumn
 
     def _undomove(self, c):
+        """
+        Undo last move at column c
+        """
         try:
             # Slice the board state to the specified column
             # state[:,c]
@@ -237,9 +254,12 @@ class Board(object):
             self.state[r,c] = '_'
             self._nextplayer()
         except ValueError:
-            raise InvalidColumn
+            raise e.InvalidColumn
 
     def _getscore(self, player):
+        """
+        Walk through all possible win conditions and calculate a total score for a particular player
+        """
         if player+str(self.state) in self.scorecache:
             return self.scorecache[player+str(self.state)]
         score = 0
@@ -273,11 +293,16 @@ class Board(object):
 
     @property
     def boardfull(self):
+        """
+        Return True if the game board is full
+        """
         return (self.state[:] != '_').all()
 
     @property
     def currentplayer(self):
-        """Return the current player type based on the current turn"""
+        """
+        Return the current player type based on the current turn
+        """
         return self.players[PLAYERS.index(self.turn)]
 
     @property
@@ -292,7 +317,7 @@ class Board(object):
         """
         Return a winner if one exists by checking the current board score
         """
-        if self.boardfull():
+        if self.boardfull:
             return 'D'
         score = self._getscore(self.turn)
         if score >= MAX_SCORE:
