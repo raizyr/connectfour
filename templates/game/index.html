@@ -10,7 +10,7 @@
   <div class="row"><h1>Connect Four</h1></div>
   {% csrf_token %}
   <div class="row">
-    <table id="board" class="game" data-turn="{{board.turn}}">
+    <table id="board" class="game" data-turn="{{board.turn}}" data-player="{{board.currentplayer}}">
       {% for row in board.height|get_range %}
       <tr class="row" data-row="{{ row }}">
         {% for column in board.width|get_range %}

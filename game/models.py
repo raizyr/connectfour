@@ -3,10 +3,12 @@ from django.conf import settings
 
 import numpy as np
 import operator as op
+import random
 
 from game.exceptions import *
 
-PLAYERS = ('P','C') # P for player, C for computer
+PLAYERS = ('R','B') # R for red player, B for black player
+PLAYER_COMBINATIONS = [('C','C'), ('P','C'), ('P','P')]
 # Possible WIN directions
 WINS = {
     -45: { 'x': np.array([0,1,2,3]), 'y': np.array([0,-1,-2,-3]) },
@@ -22,13 +24,23 @@ INFINITY = float('inf')
 
 class Board(object):
     """State machine for a game board"""
-    def __init__(self, width=None, height=None, turn=None, algorithm='alphabeta', difficulty=None):
+    def __init__(self, width=None, height=None, turn=None, algorithm='alphabeta', difficulty=None, players=1):
         self.width = width or settings.BOARD_WIDTH
         self.height = height or settings.BOARD_HEIGHT
         self.turn = turn or PLAYERS[0]
         self.state = np.array(['_' for x in range(self.height*self.width)]).reshape(self.height,self.width)
         self.algorithm = algorithm
         self.difficulty = difficulty or 1
+
+        # allow for 0, 1, or 2 players
+        if players in (0,1,2):
+            self.players = list(PLAYER_COMBINATIONS[players])
+        else:
+            self.players = list(PLAYER_COMBINATIONS[1])
+
+        # randomize starting player
+        random.shuffle(self.players)
+
 
         self.scorecache = {}
 
@@ -232,6 +244,11 @@ class Board(object):
     def computermove(self, player):
         return getattr(self, self.algorithm)(player)[0]
 
+
+    @property
+    def currentplayer(self):
+        """Return the current player type based on the current turn"""
+        return self.players[PLAYERS.index(self.turn)]
 
     @property
     def lookahead(self):
