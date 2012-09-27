@@ -9,7 +9,7 @@ dajaxice_autodiscover()
 
 urlpatterns = patterns('',
     # Examples:
-    # url(r'^$', 'connectfour.views.home', name='home'),
+    url(r'^$', 'game.views.home', name='home'),
     # url(r'^connectfour/', include('connectfour.foo.urls')),
 
     # Uncomment the admin/doc line below to enable admin documentation:

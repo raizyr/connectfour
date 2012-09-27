@@ -25,12 +25,17 @@ SCORES = [
 MAX_SCORE = 5000
 INFINITY = float('inf')
 
+DIFFICULTIES = ( # tuples of (algorithm, lookahead)
+    ('alphabeta', 1),
+    ('alphabeta', 3)
+)
+
 # store scorecache directly rather than as part of the object
 scorecache = get_cache('default')
 
 class Board(object):
     """State machine for a game board"""
-    def __init__(self, width=None, height=None, algorithm='alphabeta', difficulty=None, players=1):
+    def __init__(self, width=None, height=None, difficulty=0, players=1):
         """
         The game board.  Acts as a state machine for the game
         """
@@ -38,8 +43,7 @@ class Board(object):
         self.height = height or settings.BOARD_HEIGHT
         self.turn = PLAYERS[0]
         self.state = np.array(['_' for x in range(self.height*self.width)]).reshape(self.height,self.width)
-        self.algorithm = algorithm
-        self.difficulty = difficulty or 1
+        self.difficulty = difficulty
 
         # allow for 0, 1, or 2 players
         if players in (0,1,2):
@@ -318,7 +322,14 @@ class Board(object):
         """
         Determine computer player's look ahead depth based on board difficulty
         """
-        return self.difficulty
+        return DIFFICULTIES[self.difficulty][1]
+
+    @property
+    def algorithm(self):
+        """
+        Determine computer player's algorithm based on board difficulty
+        """
+        return DIFFICULTIES[self.difficulty][0]
 
     @property
     def winner(self):

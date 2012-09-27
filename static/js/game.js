@@ -30,6 +30,11 @@ $(document).ready(function(){
   if ($('#board').data('player') == 'C') {
     $('#board').trigger('nextplayer');
   }
+
+  $('form input:radio[name="players"]').on('change', function(e){
+    var d = $(this).val() == 2 ? true: false;
+    $('form input:radio[name="difficulty"]').prop('disabled', d);
+  });
 });
 
 
@@ -39,7 +44,7 @@ var update_game_status = function(data) {
   if (data['winner']) {
     $('#board').removeData(['turn', 'player']);
     $('#gamestatus h1').text("Game Over!  " + playertext[data['winner']] + " player wins!");
-    $('#gamestatus').append($('<a href="/game/">Click here to play again.</a>'));
+    $('#gamestatus').append($('<a href="/">Click here to play again.</a>'));
   } else {
     $('#board').data(data).trigger('nextplayer');
   }
