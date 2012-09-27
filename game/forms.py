@@ -1,24 +1,17 @@
 from django import forms
 
+from game.models import DIFFICULTIES as D, PLAYER_COMBINATIONS as P
+
 class ConfigForm(forms.Form):
-    NUMBER_OF_PLAYERS = (
-        (0, 'Zero (computer vs computer)'),
-        (1, 'One (human vs computer)'),
-        (2, 'Two (human vs human)')
-    )
-    DIFFICULTIES = (
-        (0, 'Normal'),
-        (1, 'Hard'),
-    )
     players = forms.TypedChoiceField(
                 widget=forms.RadioSelect,
-                choices=NUMBER_OF_PLAYERS,
+                choices=[(k,v[1]) for k,v in enumerate(P)],
                 coerce=int,
                 label="Number of Players",
                 initial=1)
     difficulty = forms.TypedChoiceField(
                     widget=forms.RadioSelect,
-                    choices=DIFFICULTIES,
+                    choices=[(k,v[2]) for k,v in enumerate(D)],
                     coerce=int,
                     label="Computer Difficulty",
                     initial=0,

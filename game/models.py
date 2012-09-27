@@ -8,7 +8,11 @@ import random, md5
 from game import exceptions as e
 
 PLAYERS = ('R','B') # R for red player, B for black player
-PLAYER_COMBINATIONS = [('C','C'), ('P','C'), ('P','P')]
+PLAYER_COMBINATIONS = ( # tuples of (characterpairs, formtext)
+    (('C','C'), 'Zero (computer vs computer)'),
+    (('P','C'), 'One (human vs computer)'),
+    (('P','P'), 'Two (human vs human)'),
+)
 # Possible WIN directions
 WINS = {
     -45: { 'x': np.array([0,1,2,3]), 'y': np.array([0,-1,-2,-3]) },
@@ -25,9 +29,13 @@ SCORES = [
 MAX_SCORE = 5000
 INFINITY = float('inf')
 
-DIFFICULTIES = ( # tuples of (algorithm, lookahead)
-    ('alphabeta', 1),
-    ('alphabeta', 3)
+DIFFICULTIES = ( # tuples of (algorithm, lookahead, formtext)
+        ('minimax', 1, 'minimax Normal (lookahead:1)'),
+        ('minimax', 2, 'minimax Hard (lookahead:2)'),
+        ('negamax', 1, 'negamax Normal (lookahead:1)'),
+        ('negamax', 2, 'negamax Hard (lookahead:2)'),
+        ('alphabeta', 1, 'alphabeta Normal (lookahead:1)'),
+        ('alphabeta', 3, 'alphabeta Hard (lookahead:3)'),
 )
 
 # store scorecache directly rather than as part of the object
@@ -47,9 +55,9 @@ class Board(object):
 
         # allow for 0, 1, or 2 players
         if players in (0,1,2):
-            self.players = list(PLAYER_COMBINATIONS[players])
+            self.players = list(PLAYER_COMBINATIONS[players][0])
         else:
-            self.players = list(PLAYER_COMBINATIONS[1])
+            self.players = list(PLAYER_COMBINATIONS[1][0])
 
         # randomize starting player
         random.shuffle(self.players)
