@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+
+{% block content %}
+<form class="form" action="/game/" method="post" accept-charset="utf-8">
+  <div class="row controls">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+  </div>
+  <div class="row controls-row">
+    <div class="span4 control-group">
+      {{form.players.errors}}
+      <legend>{{form.players.label}}</legend>
+      <div class="controls">
+        {% for radio in form.players %}
+        <label class="radio">
+          {{radio.tag}}
+          {{radio.choice_label}}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="span4 control-group">
+      {{form.difficulty.errors}}
+      <legend>{{form.difficulty.label}}</legend>
+      <div class="controls">
+        {% for radio in form.difficulty %}
+        <label class="radio">
+          {{radio.tag}}
+          {{radio.choice_label}}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="row controls">
+    <div class="control-group span12">
+      <button class="btn-large btn-primary" type="submit">Start Game</button>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block appjs %}
+<script src="{% static "js/game.js" %}"></script>
+{% endblock %}
